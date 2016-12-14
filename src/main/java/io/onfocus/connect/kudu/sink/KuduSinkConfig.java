@@ -30,24 +30,37 @@ public class KuduSinkConfig extends AbstractConfig {
   private static final String KUDU_WORKER_COUNT_DOC = "Maximum number of worker threads. Defauts to \"2 * the number of available processors\".";
   private static final int KUDU_WORKER_COUNT_DEFAULT = -1;
 
+  public static final String KUDU_TABLE_FIELD = "kudu.table.field";
+  private static final String KUDU_TABLE_FIELD_DOC = "Record field defining the target table name. Defaults to the topic name of the current record.";
+
+  private static final String CONNECTION_GROUP = "Connection";
+  private static final String DATA_MAPPING_GROUP = "Data Mapping";
+
   public static final ConfigDef CONFIG_DEF = new ConfigDef()
-    // Connection group
+    // Connection
     .define(
       KUDU_MASTER, ConfigDef.Type.STRING, ConfigDef.NO_DEFAULT_VALUE,
       ConfigDef.Importance.HIGH, KUDU_MASTER_DOC,
-      "Connection", 1, ConfigDef.Width.MEDIUM, KUDU_MASTER)
+      CONNECTION_GROUP, 1, ConfigDef.Width.MEDIUM, KUDU_MASTER)
     .define(
       KUDU_WORKER_COUNT, ConfigDef.Type.INT, KUDU_WORKER_COUNT_DEFAULT,
       ConfigDef.Importance.MEDIUM, KUDU_WORKER_COUNT_DOC,
-      "Connection", 2, ConfigDef.Width.MEDIUM, KUDU_WORKER_COUNT);
+      CONNECTION_GROUP, 2, ConfigDef.Width.MEDIUM, KUDU_WORKER_COUNT)
+    // Data Mapping
+    .define(
+      KUDU_TABLE_FIELD, ConfigDef.Type.STRING, null,
+      ConfigDef.Importance.LOW, KUDU_TABLE_FIELD_DOC,
+      DATA_MAPPING_GROUP, 1, ConfigDef.Width.MEDIUM, KUDU_TABLE_FIELD);
 
   public final String kuduMaster;
   public final Integer kuduWorkerCount;
+  public final String kuduTableField;
 
   public KuduSinkConfig(Map<?, ?> props) {
     super(CONFIG_DEF, props);
     kuduMaster = getString(KUDU_MASTER);
     kuduWorkerCount = getInt(KUDU_WORKER_COUNT);
+    kuduTableField = getString(KUDU_TABLE_FIELD);
   }
 
   public static void main(String... args) {

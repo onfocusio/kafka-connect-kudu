@@ -78,14 +78,20 @@ public class KuduWriter {
   }
 
   /**
-   * Open or reuse a {@link KuduTable} macthing the record topic.
+   * Open or reuse a {@link KuduTable} macthing the record or the value
+   * of the record field configured with `kudu.table.field`.
    *
    * @param record
    * @return
    * @throws KuduException
    */
   KuduTable destinationTable(SinkRecord record) throws KuduException {
-    final String tableName = record.topic();
+    String tableName;
+    if (config.kuduTableField != null) {
+      tableName = ((Struct)record.value()).getString(config.kuduTableField);
+    } else {
+      tableName = record.topic();
+    }
     KuduTable table = kuduTables.get(tableName);
     if (table == null) {
       table = client.openTable(tableName);

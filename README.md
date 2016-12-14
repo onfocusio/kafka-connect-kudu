@@ -7,6 +7,10 @@ An exhaustive configuration example is available in the `conf/` directory.
 
 # Release notes
 
+**0.2.0**
+
+* New optional property `kudu.table.field`: name of the SinkRecord field giving the name of the target Kudu table.  
+
 **0.1.0**
 
 * The Kudu table must have the same name as the input topic.
