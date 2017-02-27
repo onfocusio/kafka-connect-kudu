@@ -57,9 +57,17 @@ public class KuduSinkTask extends SinkTask {
 
     log.info("Connecting to Kudu Master at {}", config.kuduMaster);
     KuduClient.KuduClientBuilder clientBuilder = new KuduClient.KuduClientBuilder(config.kuduMaster);
+
     if (config.kuduWorkerCount != -1) {
       clientBuilder.workerCount(config.kuduWorkerCount);
     }
+    if (config.kuduOperationTimeout != -1) {
+      clientBuilder.defaultOperationTimeoutMs(config.kuduOperationTimeout);
+    }
+    if (config.kuduSocketReadTimeout != -1) {
+      clientBuilder.defaultSocketReadTimeoutMs(config.kuduSocketReadTimeout);
+    }
+
     final KuduClient client = clientBuilder.build();
     writer = new KuduWriter(config, client);
   }

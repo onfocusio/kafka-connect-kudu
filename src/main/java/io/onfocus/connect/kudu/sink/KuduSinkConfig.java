@@ -30,6 +30,14 @@ public class KuduSinkConfig extends AbstractConfig {
   private static final String KUDU_WORKER_COUNT_DOC = "Maximum number of worker threads. Defauts to \"2 * the number of available processors\".";
   private static final int KUDU_WORKER_COUNT_DEFAULT = -1;
 
+  public static final String KUDU_OPERATION_TIMEOUT = "kudu.operation.timeout.ms";
+  private static final String KUDU_OPERATION_TIMEOUT_DOC = "Timeout used for user operations (using sessions and scanners). Defauts to -1, to apply the default value of kudu-client: 30s.";
+  private static final int KUDU_OPERATION_TIMEOUT_DEFAULT = -1;
+
+  public static final String KUDU_SOCKET_READ_TIMEOUT = "kudu.socket.read.timeout.ms";
+  private static final String KUDU_SOCKET_READ_TIMEOUT_DOC = "Maximum number of worker threads. Defauts to -1, to apply the default value of kudu-client: 10s.";
+  private static final int KUDU_SOCKET_READ_TIMEOUT_DEFAULT = -1;
+
   public static final String KUDU_TABLE_FIELD = "kudu.table.field";
   private static final String KUDU_TABLE_FIELD_DOC = "Record field defining the target table name. Defaults to the topic name of the current record.";
 
@@ -46,6 +54,14 @@ public class KuduSinkConfig extends AbstractConfig {
       KUDU_WORKER_COUNT, ConfigDef.Type.INT, KUDU_WORKER_COUNT_DEFAULT,
       ConfigDef.Importance.MEDIUM, KUDU_WORKER_COUNT_DOC,
       CONNECTION_GROUP, 2, ConfigDef.Width.MEDIUM, KUDU_WORKER_COUNT)
+    .define(
+      KUDU_OPERATION_TIMEOUT, ConfigDef.Type.INT, KUDU_OPERATION_TIMEOUT_DEFAULT,
+      ConfigDef.Importance.LOW, KUDU_OPERATION_TIMEOUT_DOC,
+      CONNECTION_GROUP, 3, ConfigDef.Width.MEDIUM, KUDU_OPERATION_TIMEOUT)
+    .define(
+      KUDU_SOCKET_READ_TIMEOUT, ConfigDef.Type.INT, KUDU_SOCKET_READ_TIMEOUT_DEFAULT,
+      ConfigDef.Importance.LOW, KUDU_SOCKET_READ_TIMEOUT_DOC,
+      CONNECTION_GROUP, 4, ConfigDef.Width.MEDIUM, KUDU_SOCKET_READ_TIMEOUT)
     // Data Mapping
     .define(
       KUDU_TABLE_FIELD, ConfigDef.Type.STRING, null,
@@ -54,12 +70,16 @@ public class KuduSinkConfig extends AbstractConfig {
 
   public final String kuduMaster;
   public final Integer kuduWorkerCount;
+  public final Integer kuduOperationTimeout;
+  public final Integer kuduSocketReadTimeout;
   public final String kuduTableField;
 
   public KuduSinkConfig(Map<?, ?> props) {
     super(CONFIG_DEF, props);
     kuduMaster = getString(KUDU_MASTER);
     kuduWorkerCount = getInt(KUDU_WORKER_COUNT);
+    kuduOperationTimeout = getInt(KUDU_OPERATION_TIMEOUT);
+    kuduSocketReadTimeout = getInt(KUDU_SOCKET_READ_TIMEOUT);
     kuduTableField = getString(KUDU_TABLE_FIELD);
   }
 
