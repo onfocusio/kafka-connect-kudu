@@ -7,6 +7,11 @@ An exhaustive configuration example is available in the `conf/` directory.
 
 # Release notes
 
+**0.3.0**
+
+* Upgraded kudu-client dependency from 1.1.0 to 1.2.0.
+* New settings `kudu.operation.timeout.ms` and `kudu.socket.read.timeout.ms`.
+
 **0.2.0**
 
 * New optional property `kudu.table.field`: name of the SinkRecord field giving the name of the target Kudu table.  
