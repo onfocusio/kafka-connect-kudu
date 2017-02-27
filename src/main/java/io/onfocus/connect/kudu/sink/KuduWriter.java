@@ -47,6 +47,9 @@ public class KuduWriter {
     session.setIgnoreAllDuplicateRows(true);
 
     // Let the client handle flushes
+    // "The writes will be sent in the background, potentially batched together with other writes from
+    // the same session. If there is not sufficient buffer space, then
+    // {@link KuduSession#apply KuduSession.apply()} may block for buffer space to be available."
     session.setFlushMode(SessionConfiguration.FlushMode.AUTO_FLUSH_BACKGROUND);
   }
 
