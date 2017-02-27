@@ -10,7 +10,7 @@ repositories {
 }
 
 ext {
-  kuduVersion = "1.1.0"
+  kuduVersion = "1.2.0"
   kafkaVersion = '0.10.1.0'
   slf4jVersion = '1.7.12'
 }
