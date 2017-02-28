@@ -34,6 +34,7 @@ public class KuduSinkTask extends SinkTask {
 
   KuduSinkConfig config;
   KuduWriter writer;
+  int remainingRetries;
 
   /**
    * Get the version of this task. Usually this should be the same as the corresponding {@link org.apache.kafka.connect.connector.Connector} class's version.
@@ -55,6 +56,12 @@ public class KuduSinkTask extends SinkTask {
     log.info("Starting task");
     config = new KuduSinkConfig(props);
 
+    initWriter();
+
+    remainingRetries = config.maxRetries;
+  }
+
+  void initWriter() {
     log.info("Connecting to Kudu Master at {}", config.kuduMaster);
     KuduClient.KuduClientBuilder clientBuilder = new KuduClient.KuduClientBuilder(config.kuduMaster);
 
@@ -86,10 +93,14 @@ public class KuduSinkTask extends SinkTask {
   @Override
   public void put(Collection<SinkRecord> records) {
     if (records.isEmpty()) { return; }
-    final SinkRecord first = records.iterator().next();
-    final int recordsCount = records.size();
-    log.trace("Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to Kudu...",
-      recordsCount, first.topic(), first.kafkaPartition(), first.kafkaOffset());
+
+    if (log.isTraceEnabled()) {
+      final SinkRecord first = records.iterator().next();
+      final int recordsCount = records.size();
+      log.trace("Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to Kudu...",
+        recordsCount, first.topic(), first.kafkaPartition(), first.kafkaOffset());
+    }
+
     try {
       writer.write(records);
     } catch (KuduException ke) {
@@ -97,10 +108,20 @@ public class KuduSinkTask extends SinkTask {
         log.warn("Write of {} records failed. Kudu asks to throttle. Will retry.", records.size(), ke);
         throw new RetriableException(ke);
       } else {
-        log.warn("Write of {} records failed", records.size(), ke);
-        throw new ConnectException(ke);
+        log.warn("Write of {} records failed, remainingRetries={}", records.size(), remainingRetries, ke);
+        if (remainingRetries == 0) {
+          throw new ConnectException(ke);
+        }
+        else {
+          writer.close();
+          initWriter();
+          remainingRetries--;
+          context.timeout(config.retryBackoffMs);
+          throw new RetriableException(ke);
+        }
       }
     }
+    remainingRetries = config.maxRetries;
   }
 
   /**
@@ -124,6 +145,7 @@ public class KuduSinkTask extends SinkTask {
   @Override
   public void stop() {
     log.info("Stopping task");
+    // Closing a KuduWriter triggers a flush.
     if (writer != null) writer.close();
   }
 }

@@ -41,8 +41,21 @@ public class KuduSinkConfig extends AbstractConfig {
   public static final String KUDU_TABLE_FIELD = "kudu.table.field";
   private static final String KUDU_TABLE_FIELD_DOC = "Record field defining the target table name. Defaults to the topic name of the current record.";
 
+  public static final String MAX_RETRIES = "max.retries";
+  private static final int MAX_RETRIES_DEFAULT = 10;
+  private static final String MAX_RETRIES_DOC = "The maximum number of times to retry on errors before failing the task.";
+  private static final String MAX_RETRIES_DISPLAY = "Maximum Retries";
+
+  public static final String RETRY_BACKOFF_MS = "retry.backoff.ms";
+  private static final int RETRY_BACKOFF_MS_DEFAULT = 3000;
+  private static final String RETRY_BACKOFF_MS_DOC = "The time in milliseconds to wait following an error before a retry attempt is made.";
+  private static final String RETRY_BACKOFF_MS_DISPLAY = "Retry Backoff (millis)";
+
   private static final String CONNECTION_GROUP = "Connection";
   private static final String DATA_MAPPING_GROUP = "Data Mapping";
+  private static final String RETRIES_GROUP = "Retries";
+
+  private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
   public static final ConfigDef CONFIG_DEF = new ConfigDef()
     // Connection
@@ -66,13 +79,22 @@ public class KuduSinkConfig extends AbstractConfig {
     .define(
       KUDU_TABLE_FIELD, ConfigDef.Type.STRING, null,
       ConfigDef.Importance.LOW, KUDU_TABLE_FIELD_DOC,
-      DATA_MAPPING_GROUP, 1, ConfigDef.Width.MEDIUM, KUDU_TABLE_FIELD);
+      DATA_MAPPING_GROUP, 1, ConfigDef.Width.MEDIUM, KUDU_TABLE_FIELD)
+    // Retries
+    .define(MAX_RETRIES, ConfigDef.Type.INT, MAX_RETRIES_DEFAULT, NON_NEGATIVE_INT_VALIDATOR,
+            ConfigDef.Importance.MEDIUM, MAX_RETRIES_DOC,
+            RETRIES_GROUP, 1, ConfigDef.Width.SHORT, MAX_RETRIES_DISPLAY)
+    .define(RETRY_BACKOFF_MS, ConfigDef.Type.INT, RETRY_BACKOFF_MS_DEFAULT, NON_NEGATIVE_INT_VALIDATOR,
+            ConfigDef.Importance.MEDIUM, RETRY_BACKOFF_MS_DOC,
+            RETRIES_GROUP, 2, ConfigDef.Width.SHORT, RETRY_BACKOFF_MS_DISPLAY);
 
   public final String kuduMaster;
   public final Integer kuduWorkerCount;
   public final Integer kuduOperationTimeout;
   public final Integer kuduSocketReadTimeout;
   public final String kuduTableField;
+  public final int maxRetries;
+  public final int retryBackoffMs;
 
   public KuduSinkConfig(Map<?, ?> props) {
     super(CONFIG_DEF, props);
@@ -81,6 +103,8 @@ public class KuduSinkConfig extends AbstractConfig {
     kuduOperationTimeout = getInt(KUDU_OPERATION_TIMEOUT);
     kuduSocketReadTimeout = getInt(KUDU_SOCKET_READ_TIMEOUT);
     kuduTableField = getString(KUDU_TABLE_FIELD);
+    maxRetries = getInt(MAX_RETRIES);
+    retryBackoffMs = getInt(RETRY_BACKOFF_MS);
   }
 
   public static void main(String... args) {
