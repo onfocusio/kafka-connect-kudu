@@ -19,6 +19,9 @@ dependencies {
   compile group: 'org.apache.kudu', name: 'kudu-client', version: kuduVersion
   compile group: 'org.apache.kafka', name: 'connect-api', version: kafkaVersion
   compile group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion
+
+  testCompile group: 'junit', name: 'junit', version: '4.12'
+  testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
 }
 
 jar {
