@@ -62,6 +62,7 @@ public class KuduWriter {
   void write(final Collection<SinkRecord> records) throws KuduException {
     for (SinkRecord record : records) {
       final KuduTable table = destinationTable(record);
+      if (table == null) continue;
       final Upsert upsert = table.newUpsert();
       final PartialRow row = upsert.getRow();
 
@@ -92,6 +93,9 @@ public class KuduWriter {
     String tableName;
     if (config.kuduTableField != null) {
       tableName = ((Struct)record.value()).getString(config.kuduTableField);
+      if (config.kuduTableFilter != null && tableName.indexOf(config.kuduTableFilter) != -1) {
+        return null;
+      }
     } else {
       tableName = record.topic();
     }
