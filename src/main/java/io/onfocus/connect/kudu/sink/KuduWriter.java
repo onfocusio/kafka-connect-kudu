@@ -66,11 +66,24 @@ public class KuduWriter {
       final Upsert upsert = table.newUpsert();
       final PartialRow row = upsert.getRow();
 
-      final List<Field> fields = record.valueSchema().fields();
+      // Get column names of the Kudu table
       final Set<String> kuduColNames = table.getSchema().getColumns().stream().map((c) -> c.getName()).collect(Collectors.toSet());
-      for (Field field : fields) {
+
+      // Set the fields of the record value to a new Kudu row
+      Struct value = (Struct)record.value();
+      for (Field field : record.valueSchema().fields()) {
         if (kuduColNames.contains(field.name())) { // Ignore fields missing from the table
-          addFieldToRow(record, field, row);
+          addFieldToRow(value, field, row);
+        }
+      }
+
+      // Add the fields of the record key to the Kudu row
+      if (config.kuduKeyInsert) {
+        Struct key = (Struct)record.key();
+        for (Field field : record.keySchema().fields()) {
+          if (kuduColNames.contains(field.name())) { // Ignore fields missing from the table
+            addFieldToRow(key, field, row);
+          }
         }
       }
 
@@ -146,14 +159,13 @@ public class KuduWriter {
    * Convert a {@link SinkRecord} type to Kudu and add the column to the Kudu {@link PartialRow}.
    *
    * @param field SinkRecord Field
-   * @param record Sink record
+   * @param struct Struct value
    * @param row The Kudu row to add the field to
    * @return the updated Kudu row
    **/
-  private PartialRow addFieldToRow(SinkRecord record, Field field, PartialRow row) {
+  private PartialRow addFieldToRow(Struct struct, Field field, PartialRow row) {
     Schema.Type fieldType = field.schema().type();
     String fieldName = field.name();
-    Struct struct = (Struct)record.value();
 
     switch (fieldType) {
       case STRING:

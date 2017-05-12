@@ -44,6 +44,10 @@ public class KuduSinkConfig extends AbstractConfig {
   public static final String KUDU_TABLE_FILTER = "kudu.table.filter";
   private static final String KUDU_TABLE_FILTER_DOC = "If a table field was given, filter records containing the given string.";
 
+  public static final String KUDU_KEY_INSERT = "kudu.key.insert";
+  private static final String KUDU_KEY_INSERT_DOC = "Also insert the fields from the key in Kudu.";
+  private static final boolean KUDU_KEY_INSERT_DEFAULT = false;
+
   public static final String MAX_RETRIES = "max.retries";
   private static final int MAX_RETRIES_DEFAULT = 10;
   private static final String MAX_RETRIES_DOC = "The maximum number of times to retry on errors before failing the task.";
@@ -87,6 +91,10 @@ public class KuduSinkConfig extends AbstractConfig {
       KUDU_TABLE_FILTER, ConfigDef.Type.STRING, null,
       ConfigDef.Importance.LOW, KUDU_TABLE_FILTER_DOC,
       DATA_MAPPING_GROUP, 2, ConfigDef.Width.MEDIUM, KUDU_TABLE_FILTER)
+    .define(
+      KUDU_KEY_INSERT, ConfigDef.Type.BOOLEAN, KUDU_KEY_INSERT_DEFAULT,
+      ConfigDef.Importance.LOW, KUDU_KEY_INSERT_DOC,
+      DATA_MAPPING_GROUP, 3, ConfigDef.Width.MEDIUM, KUDU_KEY_INSERT)
     // Retries
     .define(MAX_RETRIES, ConfigDef.Type.INT, MAX_RETRIES_DEFAULT, NON_NEGATIVE_INT_VALIDATOR,
             ConfigDef.Importance.MEDIUM, MAX_RETRIES_DOC,
@@ -101,6 +109,7 @@ public class KuduSinkConfig extends AbstractConfig {
   public final Integer kuduSocketReadTimeout;
   public final String kuduTableField;
   public final String kuduTableFilter;
+  public final boolean kuduKeyInsert;
   public final int maxRetries;
   public final int retryBackoffMs;
 
@@ -112,6 +121,7 @@ public class KuduSinkConfig extends AbstractConfig {
     kuduSocketReadTimeout = getInt(KUDU_SOCKET_READ_TIMEOUT);
     kuduTableField = getString(KUDU_TABLE_FIELD);
     kuduTableFilter = getString(KUDU_TABLE_FILTER);
+    kuduKeyInsert = getBoolean(KUDU_KEY_INSERT);
     maxRetries = getInt(MAX_RETRIES);
     retryBackoffMs = getInt(RETRY_BACKOFF_MS);
   }
