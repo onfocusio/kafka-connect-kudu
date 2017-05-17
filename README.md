@@ -7,12 +7,14 @@ An exhaustive configuration example is available in the `conf/` directory.
 
 # Release notes
 
+**0.5.0**
+
+* New property `kudu.table.filter`: ignore a record if the matching table name contains the given string.
+* New property `key.insert`: also insert the fields from the key.
+
 **0.4.0**
 
 * New properties `max.retries` and `retry.backoff.ms`.
-
-**0.4.0**
-
 * Upgraded kudu-client dependency from 1.1.0 to 1.2.0.
 * New properties `kudu.operation.timeout.ms` and `kudu.socket.read.timeout.ms`.
 
