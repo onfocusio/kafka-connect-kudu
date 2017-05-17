@@ -178,7 +178,7 @@ public class KuduWriterTest {
 
     Map<String,String> props = new HashMap<String, String>();
     props.put("kudu.master","0.0.0.0");
-    props.put("kudu.key.insert", "true");
+    props.put("key.insert", "true");
     KuduSinkConfig config = new KuduSinkConfig(props);
 
     KuduWriter writer = new KuduWriter(config, client);
