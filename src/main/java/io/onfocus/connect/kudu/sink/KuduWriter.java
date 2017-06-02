@@ -72,8 +72,10 @@ public class KuduWriter {
       // Set the fields of the record value to a new Kudu row
       Struct value = (Struct)record.value();
       for (Field field : record.valueSchema().fields()) {
-        if (kuduColNames.contains(field.name())) { // Ignore fields missing from the table
-          addFieldToRow(value, field, row);
+        Schema.Type fieldType = field.schema().type();
+        // Check if the field name is in the Kudu table. If it's an array, the field name will be generated then checked later.
+        if (fieldType.equals(Schema.Type.ARRAY) || kuduColNames.contains(field.name())) {
+          addStructToRow(value, field, fieldType, row, kuduColNames);
         }
       }
 
@@ -81,8 +83,10 @@ public class KuduWriter {
       if (config.kuduKeyInsert) {
         Struct key = (Struct)record.key();
         for (Field field : record.keySchema().fields()) {
-          if (kuduColNames.contains(field.name())) { // Ignore fields missing from the table
-            addFieldToRow(key, field, row);
+          Schema.Type fieldType = field.schema().type();
+          // Check if the field name is in the Kudu table. If it's an array, the field name will be generated then checked later.
+          if (fieldType.equals(Schema.Type.ARRAY) || kuduColNames.contains(field.name())) {
+            addStructToRow(key, field, fieldType, row, kuduColNames);
           }
         }
       }
@@ -158,13 +162,13 @@ public class KuduWriter {
   /**
    * Convert a {@link SinkRecord} type to Kudu and add the column to the Kudu {@link PartialRow}.
    *
-   * @param field SinkRecord Field
    * @param struct Struct value
+   * @param field SinkRecord Field
+   * @paran fieldType
    * @param row The Kudu row to add the field to
    * @return the updated Kudu row
    **/
-  private PartialRow addFieldToRow(Struct struct, Field field, PartialRow row) {
-    Schema.Type fieldType = field.schema().type();
+  private PartialRow addStructToRow(Struct struct, Field field, Schema.Type fieldType, PartialRow row, Set<String> kuduColNames) {
     String fieldName = field.name();
 
     switch (fieldType) {
@@ -190,10 +194,100 @@ public class KuduWriter {
         row.addFloat(fieldName, struct.getFloat32(fieldName));
         break;
       case FLOAT64:
-        row.addFloat(fieldName, struct.getFloat64(fieldName).floatValue());
+        row.addDouble(fieldName, struct.getFloat64(fieldName));
         break;
       case BYTES:
         row.addBinary(fieldName, struct.getBytes(fieldName));
+        break;
+      case ARRAY:
+        // Support for arrays is handled by adding an index suffix to the field name, starting with "_1".
+        ListIterator<Object> innerValues = struct.getArray(fieldName).listIterator();
+        Schema.Type innerFieldsType = field.schema().valueSchema().type();
+        switch (innerFieldsType) {
+          case STRING:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addString(finalFieldName, (String) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case INT8:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addByte(finalFieldName, (Byte) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case INT16:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addShort(finalFieldName, (Short) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case INT32:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addInt(finalFieldName, (Integer) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case INT64:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addLong(finalFieldName, (Long) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case BOOLEAN:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addBoolean(finalFieldName, (Boolean) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case FLOAT32:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addFloat(finalFieldName, (Float) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case FLOAT64:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addDouble(finalFieldName, (Double) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          case BYTES:
+            while (innerValues.hasNext()) {
+              String finalFieldName = fieldName + "_" + (innerValues.nextIndex()+1);
+              if (kuduColNames.contains(finalFieldName))
+                row.addBinary(finalFieldName, (byte[]) innerValues.next());
+              else
+                innerValues.next(); // Consume the iterator
+            }
+            break;
+          default:
+            throw new ConnectException("Unsupported source data type in array field '" + fieldName + "': " + fieldType);
+        }
         break;
       default:
         throw new ConnectException("Unsupported source data type: " + fieldType);
@@ -201,5 +295,4 @@ public class KuduWriter {
 
     return row;
   }
-
 }

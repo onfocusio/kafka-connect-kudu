@@ -191,4 +191,60 @@ public class KuduWriterTest {
     verify(row, times(1)).addInt("int_field", 1);
     verify(session, times(1)).flush();
   }
+
+  @Test
+  public void testWriteShouldHandleArrays() throws KuduException {
+    org.apache.kudu.Schema kuduSchema = new org.apache.kudu.Schema(Arrays.asList(
+      new ColumnSchema.ColumnSchemaBuilder("k_1", Type.STRING).build(),
+      new ColumnSchema.ColumnSchemaBuilder("k_2", Type.STRING).build(),
+      new ColumnSchema.ColumnSchemaBuilder("k_3", Type.STRING).build(),
+      new ColumnSchema.ColumnSchemaBuilder("a_1", Type.STRING).build(),
+      new ColumnSchema.ColumnSchemaBuilder("a_2", Type.STRING).build()
+    ));
+
+    Schema keySchema = SchemaBuilder.struct().name("record")
+      .version(1)
+      .field("k", SchemaBuilder.array(STRING_SCHEMA))
+      .build();
+    Struct keyStruct = new Struct(keySchema)
+      .put("k", Arrays.asList(new String[] {"a", "b", "c", "d"}));
+
+
+    Schema valueSchema = SchemaBuilder.struct().name("record")
+      .version(1)
+      .field("a", SchemaBuilder.array(STRING_SCHEMA))
+      .build();
+
+    Struct valueStruct = new Struct(valueSchema)
+      .put("a", Arrays.asList(new String[] {"e", "f", "g"}));
+
+
+    SinkRecord record = new SinkRecord("topic", 1, keyStruct.schema(), keyStruct, valueStruct.schema(), valueStruct, 1);
+
+    when(client.newSession()).thenReturn(session);
+    when(session.apply(upsert)).thenReturn(operationResponse);
+    when(client.openTable("topic")).thenReturn(table);
+    when(table.getSchema()).thenReturn(kuduSchema);
+    when(table.newUpsert()).thenReturn(upsert);
+    when(upsert.getRow()).thenReturn(row);
+
+    Map<String,String> props = new HashMap<String, String>();
+    props.put("kudu.master","0.0.0.0");
+    props.put("key.insert", "true");
+    KuduSinkConfig config = new KuduSinkConfig(props);
+
+    KuduWriter writer = new KuduWriter(config, client);
+
+    writer.write(Arrays.asList(record));
+
+    verify(client, times(1)).openTable("topic");
+    verify(row, times(1)).addString("a_1", "e");
+    verify(row, times(1)).addString("a_2", "f");
+    verify(row, never()).addString("a_3", "g");
+    verify(row, times(1)).addString("k_1", "a");
+    verify(row, times(1)).addString("k_2", "b");
+    verify(row, times(1)).addString("k_3", "c");
+    verify(row, never()).addString("k_4", "d");
+    verify(session, times(1)).flush();
+  }
 }
